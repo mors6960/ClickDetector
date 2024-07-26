@@ -31,6 +31,7 @@
       justify-content: center;
       align-items: center;
       overflow: hidden;
+      transition: background-color 0.5s ease, color 0.5s ease;
     }
 
     .circular-button:active {
@@ -60,11 +61,11 @@
     const button = document.getElementById('circularButton');
     let touchStartTime = null;
     let touchPosition = null;
-    const touchThreshold = 5 * 1000; // 20 seconds
+    const touchThreshold = 5 * 1000; // 5 seconds
     let warningTimeout = null;
 
     button.addEventListener('touchstart', (e) => {
-      const { left, top, width, height } = button.getBoundingClientRect();
+      const { left, top } = button.getBoundingClientRect();
       const touch = e.touches[0];
       const touchX = touch.clientX - left;
       const touchY = touch.clientY - top;
@@ -80,7 +81,7 @@
     });
 
     button.addEventListener('touchmove', (e) => {
-      const { left, top, width, height } = button.getBoundingClientRect();
+      const { left, top } = button.getBoundingClientRect();
       const touch = e.touches[0];
       const touchX = touch.clientX - left;
       const touchY = touch.clientY - top;
@@ -112,7 +113,14 @@
 
     function startWarningTimer() {
       warningTimeout = setTimeout(() => {
-        alert('Warning: Bot detected!');
+        button.style.backgroundColor = 'red';
+        button.textContent = 'This is a bot. Please wait...';
+
+        setTimeout(() => {
+          button.style.backgroundColor = '#4caf50';
+          button.textContent = 'Touch Me';
+        }, 2000); // Reset color and text after 2 seconds
+
         resetTouchState();
       }, touchThreshold);
     }
