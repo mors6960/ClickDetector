@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Circular Button Touch Detector</title>
+  <title>Circular Button Tap Detector</title>
   <style>
     body, html {
       height: 100%;
@@ -59,50 +59,42 @@
 
   <script>
     const button = document.getElementById('circularButton');
-    let touchStartTime = null;
-    let touchPosition = null;
-    const touchThreshold = 5 * 1000; // 5 seconds
+    const tapRecords = [];
+    const tapThreshold = 5 * 1000; // 5 seconds
+    const maxTaps = 5; // Number of taps to trigger warning
+    const positionTolerance = 30; // Tolerance for touch position in pixels
     let warningTimeout = null;
 
-    button.addEventListener('touchstart', (e) => {
+    button.addEventListener('click', (e) => {
       const { left, top } = button.getBoundingClientRect();
-      const touch = e.touches[0];
-      const touchX = touch.clientX - left;
-      const touchY = touch.clientY - top;
+      const clickX = e.clientX - left;
+      const clickY = e.clientY - top;
 
       // Create ripple effect
-      createRipple(touchX, touchY);
+      createRipple(clickX, clickY);
 
-      if (!touchStartTime) {
-        touchStartTime = Date.now();
-        touchPosition = { x: touchX, y: touchY };
-        startWarningTimer();
+      // Record the tap
+      tapRecords.push({ x: clickX, y: clickY, time: Date.now() });
+
+      // Remove old taps
+      tapRecords = tapRecords.filter(tap => Date.now() - tap.time <= tapThreshold);
+
+      // Check for multiple taps in the same position
+      const recentTaps = tapRecords.filter(tap => 
+        Math.abs(tap.x - clickX) < positionTolerance && Math.abs(tap.y - clickY) < positionTolerance
+      );
+
+      if (recentTaps.length >= maxTaps) {
+        handleWarning();
       }
     });
 
-    button.addEventListener('touchmove', (e) => {
-      const { left, top } = button.getBoundingClientRect();
-      const touch = e.touches[0];
-      const touchX = touch.clientX - left;
-      const touchY = touch.clientY - top;
-
-      if (!areTouchesInSamePosition(touchX, touchY)) {
-        resetTouchState();
-      }
-    });
-
-    button.addEventListener('touchend', (e) => {
-      if (e.touches.length === 0) {
-        resetTouchState();
-      }
-    });
-
-    function createRipple(touchX, touchY) {
+    function createRipple(x, y) {
       const ripple = document.createElement('span');
       ripple.classList.add('ripple');
       ripple.style.width = ripple.style.height = `${button.offsetWidth}px`;
-      ripple.style.left = `${touchX - ripple.offsetWidth / 2}px`;
-      ripple.style.top = `${touchY - ripple.offsetHeight / 2}px`;
+      ripple.style.left = `${x - ripple.offsetWidth / 2}px`;
+      ripple.style.top = `${y - ripple.offsetHeight / 2}px`;
       button.appendChild(ripple);
 
       // Remove ripple after animation
@@ -111,28 +103,17 @@
       });
     }
 
-    function startWarningTimer() {
-      warningTimeout = setTimeout(() => {
-        button.style.backgroundColor = 'red';
-        button.textContent = 'This is a bot. Please wait...';
+    function handleWarning() {
+      button.style.backgroundColor = 'red';
+      button.textContent = 'This is a bot. Please wait...';
 
-        setTimeout(() => {
-          button.style.backgroundColor = '#4caf50';
-          button.textContent = 'Touch Me';
-        }, 2000); // Reset color and text after 2 seconds
+      setTimeout(() => {
+        button.style.backgroundColor = '#4caf50';
+        button.textContent = 'Touch Me';
+      }, 2000); // Reset color and text after 2 seconds
 
-        resetTouchState();
-      }, touchThreshold);
-    }
-
-    function resetTouchState() {
-      touchStartTime = null;
-      touchPosition = null;
-      clearTimeout(warningTimeout);
-    }
-
-    function areTouchesInSamePosition(touchX, touchY) {
-      return Math.abs(touchPosition.x - touchX) < 10 && Math.abs(touchPosition.y - touchY) < 10;
+      // Clear tap records after warning
+      tapRecords.length = 0;
     }
 
     // Disable zooming
