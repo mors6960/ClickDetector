@@ -18,8 +18,8 @@
 
     .circular-button {
       position: relative;
-      width: 600px;
-      height: 600px;
+      width: 300px;
+      height: 300px;
       border-radius: 50%;
       background-color: #4caf50;
       color: white;
@@ -60,7 +60,7 @@
     const button = document.getElementById('circularButton');
     let touchStartTime = null;
     let touchPositions = [];
-    const touchThreshold = 20 * 1000; // 20 seconds
+    const touchThreshold = 5 * 1000; // 20 seconds
     let warningTimeout = null;
 
     button.addEventListener('touchstart', (e) => {
@@ -70,7 +70,20 @@
           x: touch.clientX - left,
           y: touch.clientY - top
         }));
-        
+
+        // Create ripple effect
+        const ripple = document.createElement('span');
+        ripple.classList.add('ripple');
+        ripple.style.width = ripple.style.height = `${Math.max(width, height)}px`;
+        ripple.style.left = `${touches[0].x - ripple.offsetWidth / 2}px`;
+        ripple.style.top = `${touches[0].y - ripple.offsetHeight / 2}px`;
+        button.appendChild(ripple);
+
+        // Remove ripple after animation
+        ripple.addEventListener('animationend', () => {
+          ripple.remove();
+        });
+
         if (!touchStartTime) {
           touchStartTime = Date.now();
           touchPositions = touches;
@@ -86,7 +99,7 @@
           x: touch.clientX - left,
           y: touch.clientY - top
         }));
-        
+
         if (!areTouchesInSamePosition(touches)) {
           resetTouchState();
         }
