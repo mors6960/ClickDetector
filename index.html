@@ -2,16 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Circular Button Click Detector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Circular Button Touch Detector</title>
   <style>
     body, html {
       height: 100%;
+      width: 100%;
       margin: 0;
       display: flex;
       justify-content: center;
       align-items: center;
       background-color: #f0f0f0;
+      overflow: hidden; /* Disable scrolling */
     }
 
     .circular-button {
@@ -52,47 +54,85 @@
   </style>
 </head>
 <body>
-  <button class="circular-button" id="circularButton">Click Me</button>
+  <button class="circular-button" id="circularButton">Touch Me</button>
 
   <script>
     const button = document.getElementById('circularButton');
-    const clicks = [];
+    let touchStartTime = null;
+    let touchPositions = [];
+    const touchThreshold = 20 * 1000; // 20 seconds
+    let warningTimeout = null;
 
-    button.addEventListener('click', (e) => {
-      const { left, top, width, height } = button.getBoundingClientRect();
-      const clickX = e.clientX - left;
-      const clickY = e.clientY - top;
-
-      // Create ripple effect
-      const ripple = document.createElement('span');
-      ripple.classList.add('ripple');
-      ripple.style.width = ripple.style.height = `${Math.max(width, height)}px`;
-      ripple.style.left = `${clickX - ripple.offsetWidth / 2}px`;
-      ripple.style.top = `${clickY - ripple.offsetHeight / 2}px`;
-      button.appendChild(ripple);
-
-      // Remove ripple after animation
-      ripple.addEventListener('animationend', () => {
-        ripple.remove();
-      });
-
-      const currentTime = Date.now();
-      clicks.push({ x: clickX, y: clickY, time: currentTime });
-
-      // Remove clicks older than 1 minute
-      for (let i = clicks.length - 1; i >= 0; i--) {
-        if (currentTime - clicks[i].time > 60000) {
-          clicks.splice(i, 1);
+    button.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 1) {
+        const { left, top, width, height } = button.getBoundingClientRect();
+        const touches = Array.from(e.touches).map(touch => ({
+          x: touch.clientX - left,
+          y: touch.clientY - top
+        }));
+        
+        if (!touchStartTime) {
+          touchStartTime = Date.now();
+          touchPositions = touches;
+          startWarningTimer();
         }
       }
+    });
 
-      // Check for multiple clicks in the same position
-      const samePositionClicks = clicks.filter(
-        click => Math.abs(click.x - clickX) < width * 0.1 && Math.abs(click.y - clickY) < height * 0.1
-      );
+    button.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 1) {
+        const { left, top, width, height } = button.getBoundingClientRect();
+        const touches = Array.from(e.touches).map(touch => ({
+          x: touch.clientX - left,
+          y: touch.clientY - top
+        }));
+        
+        if (!areTouchesInSamePosition(touches)) {
+          resetTouchState();
+        }
+      } else {
+        resetTouchState();
+      }
+    });
 
-      if (samePositionClicks.length >= 5) {
+    button.addEventListener('touchend', (e) => {
+      if (e.touches.length <= 1) {
+        resetTouchState();
+      }
+    });
+
+    function startWarningTimer() {
+      warningTimeout = setTimeout(() => {
         alert('Warning: Bot detected!');
+        resetTouchState();
+      }, touchThreshold);
+    }
+
+    function resetTouchState() {
+      touchStartTime = null;
+      touchPositions = [];
+      clearTimeout(warningTimeout);
+    }
+
+    function areTouchesInSamePosition(currentTouches) {
+      if (touchPositions.length !== currentTouches.length) return false;
+
+      return touchPositions.every((pos, index) => {
+        const currentTouch = currentTouches[index];
+        return Math.abs(pos.x - currentTouch.x) < 10 && Math.abs(pos.y - currentTouch.y) < 10;
+      });
+    }
+
+    // Disable zooming
+    document.addEventListener('wheel', (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '0')) {
+        e.preventDefault();
       }
     });
   </script>
