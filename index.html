@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Circular Button Click Detector</title>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f0f0;
+    }
+
+    .circular-button {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background-color: #4caf50;
+      color: white;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .circular-button:active {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <button class="circular-button" id="circularButton">Click Me</button>
+
+  <script>
+    const button = document.getElementById('circularButton');
+    const clicks = [];
+
+    button.addEventListener('click', (e) => {
+      const { left, top, width, height } = button.getBoundingClientRect();
+      const clickX = e.clientX - left;
+      const clickY = e.clientY - top;
+
+      const currentTime = Date.now();
+      clicks.push({ x: clickX, y: clickY, time: currentTime });
+
+      // Remove clicks older than 1 minute
+      for (let i = clicks.length - 1; i >= 0; i--) {
+        if (currentTime - clicks[i].time > 60000) {
+          clicks.splice(i, 1);
+        }
+      }
+
+      // Check for multiple clicks in the same position
+      const samePositionClicks = clicks.filter(
+        click => Math.abs(click.x - clickX) < width * 0.1 && Math.abs(click.y - clickY) < height * 0.1
+      );
+
+      if (samePositionClicks.length >= 5) {
+        alert('Warning: Bot detected!');
+      }
+    });
+  </script>
+</body>
+</html>
