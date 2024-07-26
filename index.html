@@ -59,60 +59,56 @@
   <script>
     const button = document.getElementById('circularButton');
     let touchStartTime = null;
-    let touchPositions = [];
+    let touchPosition = null;
     const touchThreshold = 5 * 1000; // 20 seconds
     let warningTimeout = null;
 
     button.addEventListener('touchstart', (e) => {
-      if (e.touches.length > 1) {
-        const { left, top, width, height } = button.getBoundingClientRect();
-        const touches = Array.from(e.touches).map(touch => ({
-          x: touch.clientX - left,
-          y: touch.clientY - top
-        }));
+      const { left, top, width, height } = button.getBoundingClientRect();
+      const touch = e.touches[0];
+      const touchX = touch.clientX - left;
+      const touchY = touch.clientY - top;
 
-        // Create ripple effect
-        const ripple = document.createElement('span');
-        ripple.classList.add('ripple');
-        ripple.style.width = ripple.style.height = `${Math.max(width, height)}px`;
-        ripple.style.left = `${touches[0].x - ripple.offsetWidth / 2}px`;
-        ripple.style.top = `${touches[0].y - ripple.offsetHeight / 2}px`;
-        button.appendChild(ripple);
+      // Create ripple effect
+      createRipple(touchX, touchY);
 
-        // Remove ripple after animation
-        ripple.addEventListener('animationend', () => {
-          ripple.remove();
-        });
-
-        if (!touchStartTime) {
-          touchStartTime = Date.now();
-          touchPositions = touches;
-          startWarningTimer();
-        }
+      if (!touchStartTime) {
+        touchStartTime = Date.now();
+        touchPosition = { x: touchX, y: touchY };
+        startWarningTimer();
       }
     });
 
     button.addEventListener('touchmove', (e) => {
-      if (e.touches.length > 1) {
-        const { left, top, width, height } = button.getBoundingClientRect();
-        const touches = Array.from(e.touches).map(touch => ({
-          x: touch.clientX - left,
-          y: touch.clientY - top
-        }));
+      const { left, top, width, height } = button.getBoundingClientRect();
+      const touch = e.touches[0];
+      const touchX = touch.clientX - left;
+      const touchY = touch.clientY - top;
 
-        if (!areTouchesInSamePosition(touches)) {
-          resetTouchState();
-        }
-      } else {
+      if (!areTouchesInSamePosition(touchX, touchY)) {
         resetTouchState();
       }
     });
 
     button.addEventListener('touchend', (e) => {
-      if (e.touches.length <= 1) {
+      if (e.touches.length === 0) {
         resetTouchState();
       }
     });
+
+    function createRipple(touchX, touchY) {
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple');
+      ripple.style.width = ripple.style.height = `${button.offsetWidth}px`;
+      ripple.style.left = `${touchX - ripple.offsetWidth / 2}px`;
+      ripple.style.top = `${touchY - ripple.offsetHeight / 2}px`;
+      button.appendChild(ripple);
+
+      // Remove ripple after animation
+      ripple.addEventListener('animationend', () => {
+        ripple.remove();
+      });
+    }
 
     function startWarningTimer() {
       warningTimeout = setTimeout(() => {
@@ -123,17 +119,12 @@
 
     function resetTouchState() {
       touchStartTime = null;
-      touchPositions = [];
+      touchPosition = null;
       clearTimeout(warningTimeout);
     }
 
-    function areTouchesInSamePosition(currentTouches) {
-      if (touchPositions.length !== currentTouches.length) return false;
-
-      return touchPositions.every((pos, index) => {
-        const currentTouch = currentTouches[index];
-        return Math.abs(pos.x - currentTouch.x) < 10 && Math.abs(pos.y - currentTouch.y) < 10;
-      });
+    function areTouchesInSamePosition(touchX, touchY) {
+      return Math.abs(touchPosition.x - touchX) < 10 && Math.abs(touchPosition.y - touchY) < 10;
     }
 
     // Disable zooming

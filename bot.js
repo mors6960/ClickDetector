@@ -33,3 +33,5 @@ bot.on('callback_query', (callbackQuery) => {
   const message = callbackQuery.message;
   bot.sendMessage(message.chat.id, 'Button was pressed!');
 });
+
+console.log("Bot is started...")
